@@ -14,7 +14,7 @@ At this time I have only tested with Python 3.8.5 but it should work with all ve
 With pip:
 
 ```bash
-pip install --user logview
+pip install --user pylogview
 ```
 
 With setup.py:

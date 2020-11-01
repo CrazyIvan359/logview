@@ -8,7 +8,7 @@ with open("README.md") as fd:
 def get_version():
     with open(
         os.path.join(
-            os.path.abspath(os.path.dirname(__file__)), "logview", "__version__.py"
+            os.path.abspath(os.path.dirname(__file__)), "pylogview", "__version__.py"
         )
     ) as fd:
         for line in fd.readlines():
@@ -20,7 +20,7 @@ def get_version():
 
 
 setuptools.setup(
-    name="logview",
+    name="pylogview",
     version=get_version(),
     author="Michael Murton",
     description=(
@@ -30,7 +30,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/CrazyIvan359/logview",
-    packages=["logview"],
+    packages=["pylogview"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: MIT License",
@@ -45,6 +45,6 @@ setuptools.setup(
     license="MIT",
     keywords="log, logging, tail",
     install_requires=["blessings>=1.7,<2.0", "datefinder>=0.7.1,<1.0"],
-    entry_points={"console_scripts": ["logview=logview.__main__:main"]},
+    entry_points={"console_scripts": ["logview=pylogview.__main__:main"]},
     zip_safe=False,
 )
