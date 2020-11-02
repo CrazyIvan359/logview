@@ -11,7 +11,7 @@ from concurrent import futures
 import blessings
 import datefinder
 
-from __version__ import __version__
+from pylogview.__version__ import __version__
 
 locale.setlocale(locale.LC_ALL, "")
 
