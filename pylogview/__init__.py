@@ -402,7 +402,9 @@ class Window(object):
             )
             i = 2
             for line in textwrap.wrap(
-                f"[{err.errno}] {err.strerror}", width=self.w - 2, subsequent_indent=2,
+                f"[{err.errno}] {err.strerror}",
+                width=self.w - 2,
+                subsequent_indent=2,
             ):
                 print(self.term.move(self.y + i, self.x + 1) + line)
                 i += 1
@@ -440,7 +442,9 @@ class Window(object):
             )
             i = 2
             for line in textwrap.wrap(
-                f"[{err.errno}] {err.strerror}", width=self.w - 2, subsequent_indent=2,
+                f"[{err.errno}] {err.strerror}",
+                width=self.w - 2,
+                subsequent_indent=2,
             ):
                 print(self.term.move(self.y + i, self.x + 1) + line)
                 i += 1
