@@ -1,6 +1,6 @@
 # Change Log
 
-## Development
+## 0.1.1
 
 ### Fixed
 
