@@ -507,7 +507,10 @@ def parse_args():
         help="scrollback buffer lines (default 1000)",
     )
     parser.add_argument(
-        "-d", "--dir", help="directory to find FILE(s) in",
+        "-d",
+        "--dir",
+        default="",
+        help="directory to find FILE(s) in",
     )
     parser.add_argument(
         "-v",
