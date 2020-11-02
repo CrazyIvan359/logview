@@ -1,4 +1,4 @@
-from logview import logview
+from pylogview import logview
 
 
 def main():
