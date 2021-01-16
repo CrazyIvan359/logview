@@ -5,9 +5,6 @@
         }
     ],
     "settings": {
-        "python.formatting.provider": "black",
-        "python.linting.enabled": true,
-        "python.linting.pylintEnabled": true,
         "files.trimTrailingWhitespace": true,
         "files.insertFinalNewline": true,
         "editor.renderWhitespace": "all",
@@ -15,5 +12,31 @@
         "editor.rulers": [
             88
         ],
+        "python.formatting.provider": "black",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true,
+        "python.analysis.diagnosticMode": "workspace",
+        "python.autoComplete.extraPaths": [
+            "./pylogview"
+        ],
+        "python.analysis.extraPaths": [
+            "./pylogview"
+        ],
+    },
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "logview",
+                "type": "python",
+                "request": "launch",
+                "program": "./pylogview/__init__.py",
+                "args": [
+                    "-d",
+                    "~/openhab3/conf/log",
+                    "openhab.log",
+                ]
+            }
+        ]
     }
 }
