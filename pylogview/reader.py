@@ -1,9 +1,10 @@
 import typing as t
-import datefinder
-from .record import LogRecord
+
+from pylogview import datefinder
+from pylogview.record import LogRecord
 
 if t.TYPE_CHECKING:
-    from .window import Window
+    from pylogview.window import Window
 
 
 class LogReader:

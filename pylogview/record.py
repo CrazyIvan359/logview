@@ -1,13 +1,20 @@
 __all__ = ["LogRecord"]
 
-import typing as t
 import re
-import datefinder
 import textwrap
-from .common import DELIMETER_PATTERNS, LOG_BG, LOG_FG, LOG_FG_DARK, LOG_LEVEL
+import typing as t
+
+from pylogview import datefinder
+from pylogview.common import (
+    DELIMETER_PATTERNS,
+    LOG_BG,
+    LOG_FG,
+    LOG_FG_DARK,
+    LOG_LEVEL,
+)
 
 if t.TYPE_CHECKING:
-    from .window import Window
+    from pylogview.window import Window
 
 
 class Line:

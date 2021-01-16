@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.2.2
+
+### Fixed
+
+* Problems with script/import loading of the `pylogview` components.
+
 ## 0.2.1
 
 ### Fixed

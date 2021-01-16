@@ -8,23 +8,22 @@ import time
 from concurrent import futures
 
 import blessings
-
-from .version import __version__
-from .window import Window
-from .common import (
+from pylogview.common import (
     APP_BG,
+    APP_CLOCK,
     APP_FG,
+    APP_FRAME,
     APP_TITLE,
     BLK,
     COLORS,
     LOOP_MS,
-    MAX_WINS,
     MAX_COLS,
-    APP_FRAME,
-    APP_CLOCK,
-    tprint,
+    MAX_WINS,
     tformat,
+    tprint,
 )
+from pylogview.version import __version__
+from pylogview.window import Window
 
 TERM_TITLE = "logview"
 APPLICATION_TITLE = f"logview v{__version__}"
@@ -297,7 +296,3 @@ def logview():
                 print(*log, sep="\n")
             exit(0)
     exit(1)
-
-
-if __name__ == "__main__":
-    logview()

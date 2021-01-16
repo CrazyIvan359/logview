@@ -30,11 +30,11 @@
                 "name": "logview",
                 "type": "python",
                 "request": "launch",
-                "program": "./pylogview/__init__.py",
+                "program": "./pylogview/__main__.py",
                 "args": [
                     "-d",
                     "~/openhab3/conf/log",
-                    "openhab.log",
+                    "events.log",
                 ]
             }
         ]

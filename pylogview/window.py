@@ -1,9 +1,10 @@
 __all__ = ["Window"]
 
-import typing as t
-import os
 import locale
-from .common import (
+import os
+import typing as t
+
+from pylogview.common import (
     ACTIVE_DELAY,
     BLK,
     BLK_B,
@@ -21,13 +22,13 @@ from .common import (
     WIN_FRAME_SELECT_ACTIVE,
     WIN_LINES,
     WIN_TITLE,
-    tprint,
     tformat,
+    tprint,
 )
-from .reader import LogReader
+from pylogview.reader import LogReader
 
 if t.TYPE_CHECKING:
-    from .record import LogRecord
+    from pylogview.record import LogRecord
 
 
 class Window(object):
