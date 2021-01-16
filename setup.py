@@ -30,7 +30,8 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/CrazyIvan359/logview",
-    packages=["pylogview"],
+    packages=["pylogview"]
+    + setuptools.find_namespace_packages(include=["pylogview.*"]),
     classifiers=[
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: MIT License",

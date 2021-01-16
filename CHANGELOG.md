@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.2.1
+
+### Fixed
+
+* Bundled `datefinder` did not get added to `setup.py`.
+
 ## 0.2.0
 
 ### Added
