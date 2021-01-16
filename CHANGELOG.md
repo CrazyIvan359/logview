@@ -1,5 +1,25 @@
 # Change Log
 
+## Development
+
+### Added
+
+* Additional log levels `TRACE`, `CRITICAL`, and `EMERG`.
+
+### Changed
+
+* Scrolling is now based on display lines, not log records.
+* Page Up/Down now scrolls an entire page, not 5 records.
+* Improved line wrapping.
+* Log level matching now ignores case.
+
+### Fixed
+
+* Crash when a file contains a blank line.
+* Multiline log records not being coloured correctly.
+* Crash if scrolling and scroll bounds have been miscalculated.
+* Windows not resizing correctly or redrawing on terminal resize.
+
 ## 0.1.1
 
 ### Fixed

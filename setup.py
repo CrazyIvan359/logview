@@ -8,7 +8,7 @@ with open("README.md") as fd:
 def get_version():
     with open(
         os.path.join(
-            os.path.abspath(os.path.dirname(__file__)), "pylogview", "__version__.py"
+            os.path.abspath(os.path.dirname(__file__)), "pylogview", "version.py"
         )
     ) as fd:
         for line in fd.readlines():
@@ -44,7 +44,7 @@ setuptools.setup(
     ],
     license="MIT",
     keywords="log, logging, tail",
-    install_requires=["blessings>=1.7,<2.0", "datefinder>=0.7.1,<1.0"],
+    install_requires=["blessings>=1.7,<2.0"],
     entry_points={"console_scripts": ["logview=pylogview.__main__:main"]},
     zip_safe=False,
 )

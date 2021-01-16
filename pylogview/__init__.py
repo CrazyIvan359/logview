@@ -4,124 +4,32 @@ import datetime
 import locale
 import os
 import signal
-import textwrap
 import time
 from concurrent import futures
 
 import blessings
-import datefinder
 
-from pylogview.__version__ import __version__
+from .version import __version__
+from .window import Window
+from .common import (
+    APP_BG,
+    APP_FG,
+    APP_TITLE,
+    BLK,
+    COLORS,
+    LOOP_MS,
+    MAX_WINS,
+    MAX_COLS,
+    APP_FRAME,
+    APP_CLOCK,
+    tprint,
+    tformat,
+)
+
+TERM_TITLE = "logview"
+APPLICATION_TITLE = f"logview v{__version__}"
 
 locale.setlocale(locale.LC_ALL, "")
-
-APPLICATION_TITLE = "logview"
-
-DELIMETERS = [" - ", " | "]
-
-MAX_COLS = 3
-MAX_ROWS = 4
-MAX_WINS = MAX_COLS * MAX_ROWS
-ACTIVE_DELAY = 10
-LOOP_MS = 50
-
-BLK_T = "\u2580"
-BLK_B = "\u2584"
-BLK = "\u2588"
-BLK_L = "\u258C"
-BLK_R = "\u2590"
-BLK_BL = "\u2599"
-BLK_TL = "\u259B"
-BLK_TR = "\u259C"
-BLK_BR = "\u259F"
-
-APP_FG = 0
-APP_BG = 1
-APP_FRAME = 2
-APP_TITLE = 3
-APP_CLOCK = 4
-WIN_FRAME = 5
-WIN_FRAME_ACTIVE = 6
-WIN_FRAME_SELECT = 7
-WIN_FRAME_SELECT_ACTIVE = 8
-WIN_FRAME_LOAD = 9
-WIN_FRAME_ERROR = 10
-WIN_TITLE = 11
-WIN_LINES = 12
-LOG_LEVEL = {"DEBUG": 13, "INFO": 14, "WARNING": 15, "WARN": 15, "ERROR": 16}
-LOG_FG = 17
-LOG_FG_DARK = 18
-LOG_BG = 19
-# fmt: off
-COLORS = {
-    16: [
-        15, # APP_FG
-        16, # APP_BG
-        4,  # APP_FRAME
-        3,  # APP_TITLE
-        16, # APP_CLOCK
-        2,  # WIN_FRAME
-        10, # WIN_FRAME_ACTIVE
-        6,  # WIN_FRAME_SELECT
-        14, # WIN_FRAME_SELECT_ACTIVE
-        3,  # WIN_FRAME_LOAD
-        1,  # WIN_FRAME_ERROR
-        16, # WIN_TITLE
-        16, # WIN_LINES
-        8,  # LOG_LEVEL: DEBUG
-        10, # LOG_LEVEL: INFO
-        11, # LOG_LEVEL: WARN
-        9,  # LOG_LEVEL: ERROR
-        15, # LOG_FG
-        8,  # LOG_FG_DARK
-        16, # LOG_BG
-    ],
-    88: [
-        15, # APP_FG
-        16, # APP_BG
-        4,  # APP_FRAME
-        3,  # APP_TITLE
-        16, # APP_CLOCK
-        28, # WIN_FRAME
-        46, # WIN_FRAME_ACTIVE
-        6,  # WIN_FRAME_SELECT
-        45, # WIN_FRAME_SELECT_ACTIVE
-        3,  # WIN_FRAME_LOAD
-        1,  # WIN_FRAME_ERROR
-        16, # WIN_TITLE
-        16, # WIN_LINES
-        8,  # LOG_LEVEL: DEBUG
-        40, # LOG_LEVEL: INFO
-        11, # LOG_LEVEL: WARN
-        9,  # LOG_LEVEL: ERROR
-        15, # LOG_FG
-        8,  # LOG_FG_DARK
-        16, # LOG_BG
-    ],
-    256: [
-        15, # APP_FG
-        16, # APP_BG
-        4,  # APP_FRAME
-        3,  # APP_TITLE
-        16, # APP_CLOCK
-        28, # WIN_FRAME
-        46, # WIN_FRAME_ACTIVE
-        6,  # WIN_FRAME_SELECT
-        45, # WIN_FRAME_SELECT_ACTIVE
-        3,  # WIN_FRAME_LOAD
-        1,  # WIN_FRAME_ERROR
-        16, # WIN_TITLE
-        16, # WIN_LINES
-        246,# LOG_LEVEL: DEBUG
-        40, # LOG_LEVEL: INFO
-        208,# LOG_LEVEL: WARN
-        9,  # LOG_LEVEL: ERROR
-        15, # LOG_FG
-        240,# LOG_FG_DARK
-        233,# LOG_BG
-    ]
-}
-# fmt: on
 
 config = None
 windows = []
@@ -129,331 +37,10 @@ colors = []
 log = []
 
 
-class Window(object):
-    def __init__(self, filename):
-        self.filename = filename
-        self.name = os.path.split(filename)[-1]
-        self.fd = None
-        self.term = None
-        self._selected = False
-        self.active_delay = 0
-        self._last_line = 0
-        self._display_lines = []
-        self.x = 0
-        self.y = 0
-        self.w = 0
-        self.h = 0
-        self.frame = colors[WIN_FRAME_LOAD]
-        self.lines = []
-        self.count = 0
-        try:
-            self.fd = open(self.filename, "rb")
-        except:
-            log.append(f"Failed to open '{self.filename}'")
-            self.fd = None
-
-    def __del__(self):
-        if self.fd:
-            self.fd.close()
-
-    @property
-    def selected(self):
-        return self._selected
-
-    @selected.setter
-    def selected(self, value):
-        self._selected = value
-        if value:
-            self.frame = colors[
-                WIN_FRAME_SELECT_ACTIVE if self.active_delay else WIN_FRAME_SELECT
-            ]
-        else:
-            self.frame = colors[WIN_FRAME_ACTIVE if self.active_delay else WIN_FRAME]
-
-    def scroll_up(self, lines=1):
-        if self._last_line > 0 - len(self.lines) + 1:  # + (self.h - 2):
-            self._last_line -= lines
-            self.select_lines()
-
-    def scroll_down(self, lines=1):
-        if self._last_line < 0:
-            self._last_line += lines
-            self.select_lines()
-
-    def scroll_end(self):
-        if self._last_line < 0:
-            self._last_line = 0
-            self.select_lines()
-
-    def page_up(self):
-        self.scroll_up(5)
-
-    def page_down(self):
-        self.scroll_down(5)
-
-    def start(self, term):
-        self.term = term
-        self.draw_frame(True)
-
-    def load(self):
-        if self.fd:
-            self.read_count()
-        if self.fd:
-            self.read_last(config.lines)
-        if self.fd:
-            self.data = self.fd.read()
-            self.select_lines()
-            self.frame = colors[WIN_FRAME_SELECT if self.selected else WIN_FRAME]
-
-    def draw_frame(self, fill=False):
-        tprint(  # draw top edge and corners
-            self.term,
-            self.term.move(self.y, self.x),
-            self.term.color(self.frame) + self.term.on_color(colors[LOG_BG]),
-            BLK * int((self.w - len(self.name)) / 2),
-            self.term.color(colors[WIN_TITLE]) + self.term.on_color(self.frame),
-            self.term.bold,
-            self.name,
-            self.term.color(self.frame) + self.term.on_color(colors[LOG_BG]),
-            BLK
-            * int(
-                (
-                    ((self.w - len(self.name)) / 2)
-                    + (((self.w - len(self.name)) / 2) % 1)
-                )
-                - 18
-            ),
-            self.term.color(colors[WIN_LINES]),
-            self.term.on_color(self.frame),
-            self.term.bold,
-            f"lines: {locale.format_string('%d', self.count, True):>9}",
-            self.term.color(self.frame) + self.term.on_color(colors[LOG_BG]),
-            BLK * 2,
-        )
-        tprint(  # draw bottom edge and corners
-            self.term,
-            self.term.move(self.y + self.h - 1, self.x),
-            self.term.color(self.frame) + self.term.on_color(colors[LOG_BG]),
-            BLK_BL,
-            BLK_B * (self.w - 2),
-            BLK_BR,
-        )
-        # draw left and right edge and fill window
-        tformat(self.term.color(self.frame) + self.term.on_color(colors[LOG_BG]))
-        if fill:
-            for row in range(self.y + 1, self.y + self.h - 1):
-                print(
-                    self.term.move(row, self.x) + BLK_L + (" " * (self.w - 2)) + BLK_R
-                )
-        else:
-            for row in range(self.y + 1, self.y + self.h - 1):
-                print(
-                    self.term.move(row, self.x)
-                    + BLK_L
-                    + self.term.move(row, self.x + self.w - 1)
-                    + BLK_R
-                )
-        # reset formatting
-        tprint(self.term)
-
-    def refresh(self, force=False):
-        new_data = self.read()
-        if new_data and not force:
-            self.active_delay = ACTIVE_DELAY
-            self.frame = colors[
-                WIN_FRAME_SELECT_ACTIVE if self._selected else WIN_FRAME_ACTIVE
-            ]
-            self.select_lines()
-
-        if new_data or force:
-            self.draw_frame()
-            tformat(self.term.on_color(colors[LOG_BG]))
-            for i in range(len(self._display_lines)):
-                print(
-                    self.term.move(self.y + i + 1, self.x + 1)
-                    + (" " * (self.w - 2))
-                    + self.term.move(self.y + i + 1, self.x + 1)
-                    + self._display_lines[i]
-                )
-
-        if self._last_line == 0 and not new_data:
-            if self.active_delay > 0:
-                self.active_delay -= 1
-            else:
-                new_frame = colors[WIN_FRAME_SELECT if self._selected else WIN_FRAME]
-                if self.frame != new_frame:
-                    self.frame = new_frame
-                    self.draw_frame()
-                else:
-                    self.frame = new_frame
-
-    def select_lines(self):
-        lines = []
-        for line in range(self.h - 1, 0, -1):
-            if len(self.lines) + (self._last_line - line) >= 0:
-                lines.extend(
-                    self.format_line(
-                        self.lines[len(self.lines) + (self._last_line - line)]
-                    )
-                )
-            else:
-                lines.append("")
-        lines = lines[2 - self.h :]
-        lines = lines + [""] * (self.h - 2 - len(lines))
-        self._display_lines = lines
-
-    def format_line(self, s):
-        if config.trim_date:
-            # search for timestamp and replace with HH:MM:SS.FFF
-            dt = [*datefinder.find_dates(s, source=True)]
-            if dt:
-                dt = dt[0]
-                stime = dt[0].strftime("%H:%M:%S.%f")[:-3]
-                s = s.replace(dt[1], stime, 1)
-        # search for log level
-        level_key = None
-        level_color = self.term.color(colors[LOG_FG])
-        for key in LOG_LEVEL.keys():
-            if key in s:
-                level_key = key
-                level_color = self.term.color(colors[LOG_LEVEL[key]])
-                break
-        # break line at header/message delimeter if it is past 50% width
-        lines = []
-        for delim in DELIMETERS:
-            delim_pos = s.find(delim)
-            if delim_pos >= (self.w - 2) // 2 and delim_pos < self.w - 2:
-                lines.append(s[: delim_pos + len(delim)])
-                lines.append(f"{s[delim_pos + len(delim) :]}")
-                break
-        delim_pos = -1
-        # wrap line
-        if lines:
-            lines.extend(
-                textwrap.wrap(
-                    lines[1].lstrip(),
-                    width=self.w - 2,
-                    initial_indent="  ",
-                    subsequent_indent="  ",
-                )
-            )
-            lines.pop(1)
-        else:
-            lines = textwrap.wrap(s, width=self.w - 2, subsequent_indent="  ")
-        # add formatting
-        #   darken from start
-        lines[0] = f"{self.term.color(colors[LOG_FG_DARK])}{lines[0]}"
-        #   highlight log level
-        if level_key:
-            level_pos = lines[0].find(level_key)
-            lines[0] = (
-                f"{lines[0][:level_pos]}"
-                f"{level_color}{self.term.bold}{lines[0][level_pos : level_pos + len(level_key)]}"
-                f"{self.term.normal}{self.term.on_color(colors[LOG_BG])}"
-                f"{self.term.color(colors[LOG_FG_DARK])}{lines[0][level_pos + len(level_key):]}"
-            )
-        #   level FG after delimiter
-        for delim in DELIMETERS:
-            delim_pos = lines[0].find(delim)
-            if delim_pos >= 0:
-                lines[0] = (
-                    f"{lines[0][:delim_pos + len(delim)]}"
-                    f"{level_color}"
-                    f"{lines[0][delim_pos + len(delim):]}"
-                )
-                break
-        # add level FG to all split lines
-        for line in range(1, len(lines)):
-            lines[line] = f"{level_color}{lines[line]}"
-        # return formatted lines
-        return lines
-
-    def read(self):
-        """Read to end of file and parse next line"""
-        if not self.fd.closed:
-            try:
-                self.data += self.fd.read()
-                nl = self.data.find(b"\n")
-                if nl >= 0:
-                    self.lines.append(self.data[:nl].strip(bytes(0)).decode())
-                    self.lines = self.lines[0 - config.lines :]
-                    self.data = self.data[nl + 1 :]
-                    self.count += 1
-                    if self._last_line < -1:
-                        self.scroll_up()
-                    return True
-            except IOError:
-                pass
-        return False
-
-    def read_count(self):
-        try:
-            self.fd.seek(0, 0)
-            self.count = 0
-            for line in self.fd:  # pylint: disable=unused-variable
-                self.count += 1
-        except IOError as err:
-            self.fd = None
-            print(
-                self.term.move(self.y + 1, self.x + 1)
-                + self.term.color(colors[LOG_FG])
-                + self.term.on_color(colors[LOG_BG])
-                + "An I/O error occured while reading line count"
-            )
-            i = 2
-            for line in textwrap.wrap(
-                f"[{err.errno}] {err.strerror}",
-                width=self.w - 2,
-                subsequent_indent=2,
-            ):
-                print(self.term.move(self.y + i, self.x + 1) + line)
-                i += 1
-            self.frame = colors[WIN_FRAME_ERROR]
-            self.count = 0
-            self.draw_frame()
-
-    def read_last(self, lines):
-        """Read last ``lines`` of file, like 'tail -n'"""
-        try:
-            last_read_block = self.fd.tell()
-            block_end_byte = last_read_block
-            BLOCK_SIZE = min(block_end_byte, 1024)
-            remain_lines = lines
-            block_num = -1
-            blocks = []
-            while remain_lines > 0 and block_end_byte > 0:
-                if block_end_byte - BLOCK_SIZE > 0:
-                    self.fd.seek(block_num * BLOCK_SIZE, 2)
-                    blocks.append(self.fd.read(BLOCK_SIZE))
-                else:
-                    self.fd.seek(0, 0)
-                    blocks.append(self.fd.read(block_end_byte))
-                remain_lines -= blocks[-1].count(b"\n")
-                block_end_byte -= BLOCK_SIZE
-                block_num -= 1
-            self.fd.seek(last_read_block, 0)
-        except IOError as err:
-            self.fd = None
-            print(
-                self.term.move(self.y + 1, self.x + 1)
-                + self.term.color(colors[LOG_FG])
-                + self.term.on_color(colors[LOG_BG])
-                + "An I/O error occured while reading tail lines"
-            )
-            i = 2
-            for line in textwrap.wrap(
-                f"[{err.errno}] {err.strerror}",
-                width=self.w - 2,
-                subsequent_indent=2,
-            ):
-                print(self.term.move(self.y + i, self.x + 1) + line)
-                i += 1
-            self.frame = colors[WIN_FRAME_ERROR]
-            self.draw_frame()
-        else:
-            self.lines.extend(
-                b"".join(blocks[::-1]).strip(bytes(0)).decode().splitlines()[-lines:]
-            )
+class Logger:
+    @staticmethod
+    def append(value):
+        log.append(value)
 
 
 class SignalHook:
@@ -529,17 +116,6 @@ def parse_args():
     return parser.parse_args()
 
 
-def tprint(term, *s):
-    if len(s) == 0:
-        print(term.move(0, 0) + term.normal)
-    else:
-        print(*s, sep="", end=term.normal)
-
-
-def tformat(*s):
-    print(sep="", end="".join(s))
-
-
 def draw_app(term):
     top_before_title = int((term.width - len(APPLICATION_TITLE)) / 2)
     top_after_title = int(
@@ -590,10 +166,10 @@ def draw_clock(term):
     )
 
 
-def calculate_windows(term):
+def calculate_windows(term, update=True):
     col_count = 1
     row_count = 1
-    row_limit = 1
+    row_limit = 3
     while len(windows) / col_count / row_count > 1:
         if row_count == row_limit:
             row_count = 1
@@ -609,10 +185,13 @@ def calculate_windows(term):
         ]
         win_height = int((term.height - 2) / len(col_windows))
         for win in col_windows:
-            windows[win].x = win_width * col + 1
-            windows[win].y = win_height * col_windows.index(win) + 1
-            windows[win].w = win_width
-            windows[win].h = win_height
+            windows[win].resize(
+                x=win_width * col + 1,
+                y=win_height * col_windows.index(win) + 1,
+                w=win_width,
+                h=win_height,
+                update=update,
+            )
 
 
 def main_loop(term, screen):
@@ -631,8 +210,6 @@ def main_loop(term, screen):
             elif key_code == curses.KEY_RESIZE:
                 draw_app(term)
                 calculate_windows(term)
-                for window in windows:
-                    window.select_lines()
             elif key_code == 9:  # TAB
                 windows[selected_window].selected = False
                 selected_window += 1
@@ -667,20 +244,21 @@ def logview():
     else:
         global config
         config = parse_args()
-        print(f"\x1b]2;{APPLICATION_TITLE}\x07", end="")
+        print(f"\x1b]2;{TERM_TITLE}\x07", end="")
         colors.extend(COLORS[term.number_of_colors])
         for filename in config.file:
             filepath = os.path.abspath(os.path.join(config.dir, filename))
             if os.access(filepath, os.R_OK, effective_ids=True):
-                windows.append(Window(filepath))
+                windows.append(Window(filepath, config, Logger))
             elif os.access(filepath, os.F_OK, effective_ids=True):
                 print(f"File '{filepath}' is not readable")
             else:
                 print(f"File '{filepath}' does not exist")
-            if windows[-1].fd is None:
+            if windows and not windows[-1].reader.isOpen:
                 windows.pop(len(windows) - 1)
 
         if windows:
+            screen = None
             try:
                 screen = curses.initscr()
                 curses.noecho()
@@ -697,9 +275,11 @@ def logview():
                     + term.clear
                 )
                 draw_app(term)
-                calculate_windows(term)
+                calculate_windows(term, False)
                 for window in windows:
                     window.start(term)
+                    # window.load()
+                    # window.refresh(True)
                 with futures.ThreadPoolExecutor() as pool:
                     threads = {pool.submit(window.load): window for window in windows}
                     for future in futures.as_completed(threads):
@@ -710,7 +290,8 @@ def logview():
             finally:
                 tprint(term, term.exit_fullscreen + term.normal_cursor)
                 curses.nocbreak()
-                screen.keypad(False)
+                if screen:
+                    screen.keypad(False)
                 curses.echo()
                 curses.endwin()
                 print(*log, sep="\n")

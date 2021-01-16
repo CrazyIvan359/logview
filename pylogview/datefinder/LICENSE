@@ -1,9 +1,6 @@
+The MIT License (MIT)
 
-MIT License
-
-Copyright (c) 2020-2021 logview contributors
-
-logview contains a bundled copy of datefinder by Alec Koumjian.
+Copyright (c) 2015 Alec Koumjian
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
