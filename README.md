@@ -1,6 +1,7 @@
 # logview
 
 [![Latest Version](https://img.shields.io/github/v/tag/CrazyIvan359/logview?label=release)](https://github.com/CrazyIvan359/logview/releases)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/pylogview?label=pypi%20downloads)](https://pypi.org/project/pylogview/)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/CrazyIvan359/logview/blob/master/LICENSE)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
